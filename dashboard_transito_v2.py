@@ -649,7 +649,6 @@ with col5:
     fig_ev.add_trace(go.Scatter(
         x=evol["Fecha"],y=evol["Puntualidad"],
         name="% Puntualidad",line=dict(color="#2ea043",width=2.5),
-        fill="tozeroy",fillcolor="#2ea04312",
         mode="lines+markers",marker=dict(size=6),
         customdata=evol[["TotalSalidas","EstadoObra"]],
         hovertemplate="<b>%{x|%d/%m}</b><br>Puntualidad: %{y}%<br>"
