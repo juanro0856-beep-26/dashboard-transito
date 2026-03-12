@@ -637,12 +637,15 @@ with col5:
     ).reset_index()
 
     fig_ev = make_subplots(specs=[[{"secondary_y":True}]])
+    shapes = []
     for _, row in evol[evol["EstadoObra"]=="Con Obra"].iterrows():
-        fig_ev.add_vrect(
+        shapes.append(dict(
+            type="rect", xref="x", yref="paper",
             x0=row["Fecha"]-timedelta(hours=12),
             x1=row["Fecha"]+timedelta(hours=12),
-            fillcolor="#e3b34118",line_width=0,layer="below",
-        )
+            y0=0, y1=1, fillcolor="#e3b341",
+            opacity=0.08, layer="below", line_width=0,
+        ))
     fig_ev.add_trace(go.Scatter(
         x=evol["Fecha"],y=evol["Puntualidad"],
         name="% Puntualidad",line=dict(color="#2ea043",width=2.5),
@@ -668,6 +671,7 @@ with col5:
                     bordercolor="#30363d",borderwidth=1,x=0.01,y=0.99),
         font_color="#e6edf3",
         xaxis=dict(tickfont=dict(color="#8b949e"),gridcolor="#21262d",tickformat="%d/%m"),
+        shapes=shapes,
     )
     fig_ev.update_yaxes(tickfont=dict(color="#8b949e"),gridcolor="#21262d",
                          title_text="% Puntualidad",title_font=dict(color="#8b949e"),secondary_y=False)
