@@ -532,8 +532,10 @@ with col2:
             texttemplate="%{text}m",
             textfont={"size":10,"color":"#fff"},
             hoverongaps=False,
-            colorbar=dict(title="Min",tickfont=dict(color="#8b949e"),
-                          titlefont=dict(color="#8b949e")),
+            colorbar=dict(
+                title=dict(text="Min", font=dict(color="#8b949e")),
+                tickfont=dict(color="#8b949e"),
+            ),
         ))
         fig_hm.update_layout(
             paper_bgcolor="#0d1117",plot_bgcolor="#161b22",
