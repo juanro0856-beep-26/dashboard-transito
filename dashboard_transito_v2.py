@@ -734,16 +734,19 @@ def highlight_row(row):
     names  = row.index.tolist()
     def idx(n):
         return names.index(n) if n in names else -1
-    if row["VueltasPerdidas"] > 3:
+    # Usar nombres YA renombrados (los que ve tabla_disp)
+    if row["Vueltas Perdidas"] > 3:
         i = idx("Interno")
         if i >= 0: styles[i] = "background-color:#3d2200;color:#e3b341;font-weight:700"
-    if pd.notna(row["Vel_Comercial"]) and row["Vel_Comercial"] < 15:
+    vc = row.get("Vel. Comercial (km/h)", None)
+    if vc is not None and pd.notna(vc) and vc < 15:
         i = idx("Vel. Comercial (km/h)")
         if i >= 0: styles[i] = "background-color:#3d1a1a;color:#f85149;font-weight:700"
-    if row["Puntualidad_pct"] < 70:
+    if row["Puntualidad %"] < 70:
         i = idx("Puntualidad %")
         if i >= 0: styles[i] = "background-color:#3d1a1a;color:#f85149;font-weight:700"
-    if pd.notna(row["KM_Delta_prom"]) and row["KM_Delta_prom"] > 5:
+    km_d = row.get("Desvío KM prom", None)
+    if km_d is not None and pd.notna(km_d) and km_d > 5:
         i = idx("Desvío KM prom")
         if i >= 0: styles[i] = "background-color:#1a2a3d;color:#79c0ff;font-weight:700"
     return styles
