@@ -240,12 +240,77 @@ def procesar_archivo(contenido_bytes, nombre_archivo):
 # ─────────────────────────────────────────────
 @st.cache_data(ttl=300, show_spinner="Actualizando desde Google Sheets…")
 def cargar_gsheets(url):
-    """Lee el CSV publicado de Google Sheets y lo procesa igual que un archivo subido."""
+    """Lee el CSV publicado de Google Sheets usando pandas directamente."""
     try:
-        import urllib.request
-        with urllib.request.urlopen(url, timeout=10) as r:
-            contenido = r.read()
-        return procesar_archivo(contenido, "gsheets.csv")
+        df = pd.read_csv(url)
+        # Renombrar columnas al nombre interno
+        df.columns = [str(c).strip() for c in df.columns]
+        col_rename = {}
+        for col_orig, col_int in COLS_MAP.items():
+            matches = [c for c in df.columns if c.strip().lower() == col_orig.lower()]
+            if matches:
+                col_rename[matches[0]] = col_int
+        df = df.rename(columns=col_rename)
+
+        requeridas = ["Fecha", "Linea", "Interno", "SalidaProg", "SalidaReal"]
+        faltantes = [r for r in requeridas if r not in df.columns]
+        if faltantes:
+            return None, f"Columnas no encontradas: {faltantes}"
+
+        if len(df) == 0:
+            return None, "La hoja no tiene datos aún (solo encabezados)"
+
+        df["Fecha"] = parse_fecha(df["Fecha"])
+        df = df.dropna(subset=["Fecha"])
+
+        for col in ["SalidaProg", "SalidaReal", "LlegadaProg", "LlegadaReal"]:
+            if col in df.columns:
+                df[col + "_min"] = parse_hhmm(df[col])
+
+        df["MinutosRetraso"] = (df["SalidaReal_min"] - df["SalidaProg_min"]).clip(lower=0)
+
+        if "LlegadaReal_min" in df.columns and "SalidaReal_min" in df.columns:
+            df["DuracionReal_min"] = (df["LlegadaReal_min"] - df["SalidaReal_min"]).clip(lower=1)
+        else:
+            df["DuracionReal_min"] = np.nan
+
+        if "KM_Autorizados" not in df.columns:
+            df["KM_Autorizados"] = df["Linea"].astype(str).str.strip().map(KM_DEFAULT).fillna(20.0)
+        else:
+            df["KM_Autorizados"] = pd.to_numeric(df["KM_Autorizados"], errors="coerce").fillna(20.0)
+
+        df["KM_Reales"] = pd.to_numeric(df.get("KM_Reales", np.nan), errors="coerce")
+        df["KM_Delta"]  = df["KM_Reales"] - df["KM_Autorizados"]
+
+        df["VelocidadComercial"] = np.where(
+            df["DuracionReal_min"] > 0,
+            (df["KM_Reales"] / df["DuracionReal_min"] * 60).round(1),
+            np.nan,
+        )
+
+        df["HoraProg"] = (df["SalidaProg_min"] // 60).astype("Int64")
+        df["Puntual"] = df["MinutosRetraso"] <= 5
+
+        if "DesvioObras" in df.columns:
+            df["EstadoObra"] = df["DesvioObras"].apply(
+                lambda v: "Con Obra" if (pd.notna(v) and str(v).strip() not in ["", "nan", "-", "0"]) else "Sin Obra"
+            )
+        else:
+            df["EstadoObra"] = "Sin Obra"
+
+        df["VueltasPerdidas"] = (df["MinutosRetraso"] > 15).astype(int)
+        df["Interno"] = df["Interno"].astype(str).str.strip().str.upper()
+        df["Linea"]   = df["Linea"].astype(str).str.strip()
+        df["DiaSemana"] = df["Fecha"].dt.day_name()
+
+        def turno_desde_hora(h):
+            if pd.isna(h): return "Sin dato"
+            if 5 <= h < 13:  return "Mañana"
+            if 13 <= h < 20: return "Tarde"
+            return "Noche"
+        df["Turno"] = df["HoraProg"].apply(turno_desde_hora)
+
+        return df, None
     except Exception as e:
         return None, str(e)
 
