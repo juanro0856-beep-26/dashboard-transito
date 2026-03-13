@@ -312,7 +312,7 @@ with st.sidebar:
     st.markdown("## 🚌 Panel de Control")
     st.markdown("---")
 
-    GSHEETS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR0BjgSLvDcElS5jV3nbJWrl-G7cllcMal5OjKdM-mytmYaklubYex2Qn2K5soumVmPWMMh8CYDdpkK/pub?gid=1242609982&single=true&output=csv"
+    GSHEETS_URL = "https://docs.google.com/spreadsheets/d/1MTV5NsRcoelMNn_98ISz0VZWNx4vAN2LLOcw-i-gakM/export?format=csv&gid=1242609982"
 
     fuente = st.radio("📡 Fuente de datos", ["Google Sheets (automático)", "Subir archivo manual"], index=0)
 
