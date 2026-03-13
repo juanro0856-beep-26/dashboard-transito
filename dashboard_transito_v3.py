@@ -77,41 +77,46 @@ section[data-testid="stSidebar"] {
 # MAPEO DE COLUMNAS — nombres posibles → nombre interno
 # ─────────────────────────────────────────────
 COLS_MAP = {
-    # Fecha puede estar combinada con hora en Salida Planificada
-    "turno":                    "Turno",
-    "vuelta":                   "Vuelta",
-    "unidad":                   "Unidad",
-    "dominio":                  "Dominio",
-    "servicio":                 "Servicio",
-    "serv icio":                "Servicio",
-    "chofer/eres":              "Chofer",
-    "chofer":                   "Chofer",
-    "choferes":                 "Chofer",
-    "salida planificada":       "SalidaPlan",
-    "salida real":              "SalidaReal",
-    "salida - adelanto":        "SalidaDelta",
-    "salida adelanto":          "SalidaDelta",
-    "salida-adelanto":          "SalidaDelta",
-    "salida - atraso":          "SalidaDelta",
-    "llegada planificada":      "LlegadaPlan",
-    "llegada - planificada":    "LlegadaPlan",
-    "llegada real":             "LlegadaReal",
-    "llegada - real":           "LlegadaReal",
-    "llegada - adelanto":       "LlegadaDelta",
-    "llegada adelanto":         "LlegadaDelta",
-    "llegada - atraso":         "LlegadaDelta",
-    "km recorrido":             "KM_Recorrido",
-    "km recorridos":            "KM_Recorrido",
-    "km reales":                "KM_Recorrido",
-    "km autorizado":            "KM_Autorizado",
-    "km autorizados":           "KM_Autorizado",
-    "velocidad o.":             "VelocidadComercial",
-    "velocidad comercial":      "VelocidadComercial",
-    "velocidad":                "VelocidadComercial",
-    "cumplimiento del servicio":"Cumplimiento",
-    "cumplimiento":             "Cumplimiento",
-    "observaciones":            "Observaciones",
-    "observacion":              "Observaciones",
+    # Nombres exactos de la planilla real (en minúsculas para comparación)
+    "turno":                        "Turno",
+    "vuelta":                       "Vuelta",
+    "unidad":                       "Unidad",
+    "dominio":                      "Dominio",
+    "servicio":                     "Servicio",
+    "choferes":                     "Chofer",
+    "chofer/eres":                  "Chofer",
+    "chofer":                       "Chofer",
+    # Salida
+    "salida planificada":           "SalidaPlan",
+    "salida-real":                  "SalidaReal",
+    "salida real":                  "SalidaReal",
+    "salida-adelanto":              "SalidaDelta",
+    "salida - adelanto":            "SalidaDelta",
+    "salida - atraso":              "SalidaAtrasoDelta",
+    "salida-atraso":                "SalidaAtrasoDelta",
+    # Llegada
+    "llegada - planificada":        "LlegadaPlan",
+    "llegada planificada":          "LlegadaPlan",
+    "legada - real":                "LlegadaReal",
+    "llegada - real":               "LlegadaReal",
+    "llegada real":                 "LlegadaReal",
+    "llegada - adelanto":           "LlegadaDelta",
+    "llegada adelanto":             "LlegadaDelta",
+    "llegada - atraso":             "LlegadaAtrasoDelta",
+    # KM y velocidad
+    "km recorrido":                 "KM_Recorrido",
+    "km recorridos":                "KM_Recorrido",
+    "km autorizado":                "KM_Autorizado",
+    "km autorizados":               "KM_Autorizado",
+    "velocidad c. planificada":     "VelocidadComercial",
+    "velocidad o.":                 "VelocidadComercial",
+    "velocidad comercial":          "VelocidadComercial",
+    "velocidad":                    "VelocidadComercial",
+    # Cumplimiento y observaciones
+    "cumplimiento del servicio":    "Cumplimiento",
+    "cumplimiento":                 "Cumplimiento",
+    "observaciones":                "Observaciones",
+    "observacion":                  "Observaciones",
 }
 
 
@@ -188,7 +193,7 @@ def procesar_df(df):
     df = df.rename(columns=col_rename)
 
     # Columnas requeridas mínimas
-    requeridas = ["SalidaPlan", "SalidaReal"]
+    requeridas = ["SalidaPlan"]
     faltantes = [r for r in requeridas if r not in df.columns]
     if faltantes:
         return None, f"No se encontraron columnas requeridas: {faltantes}. Verificá los encabezados."
@@ -213,22 +218,30 @@ def procesar_df(df):
     df["DiaSemana"] = df["Fecha"].dt.day_name()
 
     # ── Minutos de retraso en salida ──────────────────────────────────────
-    if "SalidaDelta" in df.columns:
-        df["RetrasoSalida_min"] = parse_delta_min(df["SalidaDelta"])
-    else:
+    # Calcular retraso salida
+    if "SalidaReal_dt" in df.columns and df["SalidaReal_dt"].notna().any():
         df["RetrasoSalida_min"] = (
             (df["SalidaReal_dt"] - df["SalidaPlan_dt"])
             .dt.total_seconds() / 60
         ).fillna(0)
+    elif "SalidaAtrasoDelta" in df.columns:
+        df["RetrasoSalida_min"] = parse_delta_min(df["SalidaAtrasoDelta"])
+    elif "SalidaDelta" in df.columns:
+        df["RetrasoSalida_min"] = parse_delta_min(df["SalidaDelta"])
+    else:
+        df["RetrasoSalida_min"] = 0.0
 
     # ── Minutos de retraso en llegada ─────────────────────────────────────
-    if "LlegadaDelta" in df.columns:
-        df["RetrasoLlegada_min"] = parse_delta_min(df["LlegadaDelta"])
-    elif "LlegadaReal_dt" in df.columns and "LlegadaPlan_dt" in df.columns:
+    # Calcular retraso llegada
+    if "LlegadaReal_dt" in df.columns and "LlegadaPlan_dt" in df.columns and df["LlegadaReal_dt"].notna().any():
         df["RetrasoLlegada_min"] = (
             (df["LlegadaReal_dt"] - df["LlegadaPlan_dt"])
             .dt.total_seconds() / 60
         ).fillna(0)
+    elif "LlegadaAtrasoDelta" in df.columns:
+        df["RetrasoLlegada_min"] = parse_delta_min(df["LlegadaAtrasoDelta"])
+    elif "LlegadaDelta" in df.columns:
+        df["RetrasoLlegada_min"] = parse_delta_min(df["LlegadaDelta"])
     else:
         df["RetrasoLlegada_min"] = df["RetrasoSalida_min"]
 
@@ -519,14 +532,18 @@ if alertas:
 # KPIs
 # ─────────────────────────────────────────────
 def semaforo(val, ok, warn, inv=False):
-    if pd.isna(val): return "yellow", "warning"
+    try:
+        v = float(val)
+        if np.isnan(v): return "yellow", "warning"
+    except:
+        return "yellow", "warning"
     if not inv:
-        if val >= ok:   return "green", ""
-        if val >= warn: return "yellow", "warning"
+        if v >= ok:   return "green", ""
+        if v >= warn: return "yellow", "warning"
         return "red", "danger"
     else:
-        if val <= ok:   return "green", ""
-        if val <= warn: return "yellow", "warning"
+        if v <= ok:   return "green", ""
+        if v <= warn: return "yellow", "warning"
         return "red", "danger"
 
 if len(df) > 0:
