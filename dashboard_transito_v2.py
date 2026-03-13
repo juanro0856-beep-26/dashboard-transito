@@ -236,6 +236,21 @@ def procesar_archivo(contenido_bytes, nombre_archivo):
 
 
 # ─────────────────────────────────────────────
+# CARGA DESDE GOOGLE SHEETS
+# ─────────────────────────────────────────────
+@st.cache_data(ttl=300, show_spinner="Actualizando desde Google Sheets…")
+def cargar_gsheets(url):
+    """Lee el CSV publicado de Google Sheets y lo procesa igual que un archivo subido."""
+    try:
+        import urllib.request
+        with urllib.request.urlopen(url, timeout=10) as r:
+            contenido = r.read()
+        return procesar_archivo(contenido, "gsheets.csv")
+    except Exception as e:
+        return None, str(e)
+
+
+# ─────────────────────────────────────────────
 # DATOS DE DEMO (si no hay archivo)
 # ─────────────────────────────────────────────
 @st.cache_data
@@ -297,17 +312,29 @@ with st.sidebar:
     st.markdown("## 🚌 Panel de Control")
     st.markdown("---")
 
-    archivo = st.file_uploader(
-        "📂 Cargar planilla (.xlsx / .csv)",
-        type=["xlsx", "xls", "csv"],
-        help="Columnas: Fecha · ID Servicio · Interno · Salida Prog. · Salida Real · "
-             "Llegada Prog. · Llegada Real · Km Reales · Incidente · Desvío Obras · Km Autorizados",
-    )
+    GSHEETS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR0BjgSLvDcElS5jV3nbJWrl-G7cllcMal5OjKdM-mytmYaklubYex2Qn2K5soumVmPWMMh8CYDdpkK/pub?gid=1242609982&single=true&output=csv"
+
+    fuente = st.radio("📡 Fuente de datos", ["Google Sheets (automático)", "Subir archivo manual"], index=0)
+
+    archivo = None
+    if fuente == "Subir archivo manual":
+        archivo = st.file_uploader(
+            "📂 Cargar planilla (.xlsx / .csv)",
+            type=["xlsx", "xls", "csv"],
+        )
 
     st.markdown("---")
 
     # Cargar datos
-    if archivo:
+    if fuente == "Google Sheets (automático)":
+        df_raw, error = cargar_gsheets(GSHEETS_URL)
+        if error:
+            st.warning(f"⚠️ No se pudo leer Google Sheets: {error}\nMostrando datos de demo.")
+            df_raw = datos_demo()
+            modo = "demo"
+        else:
+            modo = "real"
+    elif archivo:
         df_raw, error = procesar_archivo(archivo.read(), archivo.name)
         if error:
             st.error(error)
@@ -356,9 +383,10 @@ with st.sidebar:
 
     st.markdown("---")
     tag = "🟢 Datos reales" if modo == "real" else "🟡 Datos de demo"
+    fuente_label = "Google Sheets" if fuente == "Google Sheets (automático)" else (archivo.name if archivo else "Sin archivo")
     st.markdown(
         f"<div style='font-size:0.75rem;color:#8b949e;text-align:center'>"
-        f"{tag}<br><b style='color:#e6edf3'>{archivo.name if archivo else 'Sin archivo'}</b>"
+        f"{tag}<br><b style='color:#e6edf3'>{fuente_label}</b>"
         f"</div>", unsafe_allow_html=True,
     )
 
