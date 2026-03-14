@@ -184,8 +184,8 @@ def parse_cumplimiento(serie):
 # ─────────────────────────────────────────────
 def procesar_df(df):
     """Recibe un DataFrame crudo y devuelve uno procesado."""
-    # Normalizar nombres de columnas
-    df.columns = [str(c).strip() for c in df.columns]
+    # Normalizar nombres de columnas — eliminar saltos de línea y espacios extra
+    df.columns = [str(c).replace("\n", " ").replace("\r", " ").strip() for c in df.columns]
 
     # Saltar fila 2 si es encabezado secundario (BARRIDO tiene fila 2 con nombres repetidos)
     if len(df) > 0:
