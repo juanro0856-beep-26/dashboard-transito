@@ -266,11 +266,12 @@ def procesar_df(df):
     # ── KM ────────────────────────────────────────────────────────────────
     if "KM_Recorrido" in df.columns:
         df["KM_Recorrido"] = parse_km(df["KM_Recorrido"])
+    else:
+        df["KM_Recorrido"] = np.nan
     if "KM_Autorizado" in df.columns:
         df["KM_Autorizado"] = parse_km(df["KM_Autorizado"])
     else:
-        # Derivar por servicio si no existe
-        if "Servicio" in df.columns:
+        if "Servicio" in df.columns and df["KM_Recorrido"].notna().any():
             km_por_serv = df.groupby("Servicio")["KM_Recorrido"].median()
             df["KM_Autorizado"] = df["Servicio"].map(km_por_serv)
         else:
