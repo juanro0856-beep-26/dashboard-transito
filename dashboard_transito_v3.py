@@ -90,6 +90,8 @@ COLS_MAP = {
     "chofer":                       "Chofer",
     # Salida
     "salida planificada":           "SalidaPlan",
+    "salida planificada":           "SalidaPlan",
+    "salida_planificada":           "SalidaPlan",
     "salida-real":                  "SalidaReal",
     "salida real":                  "SalidaReal",
     "salida - adelanto":            "SalidaAdelanto",
@@ -186,6 +188,9 @@ def procesar_df(df):
     """Recibe un DataFrame crudo y devuelve uno procesado."""
     # Normalizar nombres de columnas — eliminar saltos de línea y espacios extra
     df.columns = [str(c).replace("\n", " ").replace("\r", " ").strip() for c in df.columns]
+    # Colapsar espacios múltiples
+    import re
+    df.columns = [re.sub(r" +", " ", c) for c in df.columns]
 
     # Saltar fila 2 si es encabezado secundario (BARRIDO tiene fila 2 con nombres repetidos)
     if len(df) > 0:
@@ -196,13 +201,13 @@ def procesar_df(df):
         if matches >= 3:
             df = df.iloc[1:].reset_index(drop=True)
 
-    # Renombrar
+    # Renombrar columnas al nombre interno
+    import re
     col_rename = {}
     for c in df.columns:
-        key = c.lower().strip()
+        key = re.sub(r"\s+", " ", str(c).lower().replace("\n"," ").replace("\r"," ")).strip()
         if key in COLS_MAP:
             col_rename[c] = COLS_MAP[key]
-    df = df.rename(columns=col_rename)
 
     # Columnas requeridas mínimas
     requeridas = ["SalidaPlan"]
