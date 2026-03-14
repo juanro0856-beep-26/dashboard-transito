@@ -208,6 +208,7 @@ def procesar_df(df):
         key = re.sub(r"\s+", " ", str(c).lower().replace("\n"," ").replace("\r"," ")).strip()
         if key in COLS_MAP:
             col_rename[c] = COLS_MAP[key]
+    df = df.rename(columns=col_rename)
 
     # Columnas requeridas mínimas
     requeridas = ["SalidaPlan"]
