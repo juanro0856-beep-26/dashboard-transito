@@ -574,11 +574,11 @@ else:
     pct_punt = ret_sal = ret_ll = total_vp = vel_prom = cum_prom = km_delta = total_sal = 0
 
 kpis = [
-    ("% Puntualidad Salida", f"{pct_punt}%",   *semaforo(pct_punt,(80,70)),   f"Umbral: 70% · {total_sal} servicios"),
-    ("Retraso Salida Prom",  f"{ret_sal} min",  *semaforo(ret_sal,(5,12),inv=True), "Minutos sobre hora planificada"),
-    ("Retraso Llegada Prom", f"{ret_ll} min",   *semaforo(ret_ll,(5,15),inv=True),  "Minutos sobre llegada planificada"),
-    ("Vel. Comercial Prom",  f"{vel_prom} km/h",*semaforo(vel_prom,(17,15)),   "Umbral mínimo: 15 km/h"),
-    ("Cumplimiento Servicio",f"{cum_prom}%",    *semaforo(cum_prom,(95,80)),   "Promedio del período"),
+    ("% Puntualidad Salida", f"{pct_punt}%",    *semaforo(pct_punt, 80, 70),       f"Umbral: 70% · {total_sal} servicios"),
+    ("Retraso Salida Prom",  f"{ret_sal} min",  *semaforo(ret_sal,  5,  12, True), "Minutos sobre hora planificada"),
+    ("Retraso Llegada Prom", f"{ret_ll} min",   *semaforo(ret_ll,   5,  15, True), "Minutos sobre llegada planificada"),
+    ("Vel. Comercial Prom",  f"{vel_prom} km/h",*semaforo(vel_prom, 17, 15),       "Umbral mínimo: 15 km/h"),
+    ("Cumplimiento Servicio",f"{cum_prom}%",    *semaforo(cum_prom, 95, 80),       "Promedio del período"),
 ]
 
 cols = st.columns(5)
