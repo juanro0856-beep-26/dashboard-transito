@@ -77,10 +77,12 @@ section[data-testid="stSidebar"] {
 # MAPEO DE COLUMNAS — nombres posibles → nombre interno
 # ─────────────────────────────────────────────
 COLS_MAP = {
-    # Nombres exactos de la planilla real (en minúsculas para comparación)
+    # Nombres exactos de la planilla BARRIDO (en minúsculas para comparación)
+    "tr turno":                     "Turno",
     "turno":                        "Turno",
     "vuelta":                       "Vuelta",
     "unidad":                       "Unidad",
+    "tr dominio":                   "Dominio",
     "dominio":                      "Dominio",
     "servicio":                     "Servicio",
     "choferes":                     "Chofer",
@@ -90,19 +92,19 @@ COLS_MAP = {
     "salida planificada":           "SalidaPlan",
     "salida-real":                  "SalidaReal",
     "salida real":                  "SalidaReal",
-    "salida-adelanto":              "SalidaDelta",
-    "salida - adelanto":            "SalidaDelta",
-    "salida - atraso":              "SalidaAtrasoDelta",
-    "salida-atraso":                "SalidaAtrasoDelta",
+    "salida - adelanto":            "SalidaAdelanto",
+    "salida-adelanto":              "SalidaAdelanto",
+    "salida - atraso":              "SalidaAtraso",
+    "salida-atraso":                "SalidaAtraso",
     # Llegada
-    "llegada - planificada":        "LlegadaPlan",
     "llegada planificada":          "LlegadaPlan",
-    "legada - real":                "LlegadaReal",
+    "llegada - planificada":        "LlegadaPlan",
     "llegada - real":               "LlegadaReal",
     "llegada real":                 "LlegadaReal",
-    "llegada - adelanto":           "LlegadaDelta",
-    "llegada adelanto":             "LlegadaDelta",
-    "llegada - atraso":             "LlegadaAtrasoDelta",
+    "legada - real":                "LlegadaReal",
+    "llegada - adelanto":           "LlegadaAdelanto",
+    "llegada adelanto":             "LlegadaAdelanto",
+    "llegada - atraso":             "LlegadaAtraso",
     # KM y velocidad
     "km recorrido":                 "KM_Recorrido",
     "km recorridos":                "KM_Recorrido",
@@ -113,6 +115,7 @@ COLS_MAP = {
     "velocidad comercial":          "VelocidadComercial",
     "velocidad":                    "VelocidadComercial",
     # Cumplimiento y observaciones
+    "tr cumplimiento del servicio": "Cumplimiento",
     "cumplimiento del servicio":    "Cumplimiento",
     "cumplimiento":                 "Cumplimiento",
     "observaciones":                "Observaciones",
@@ -184,6 +187,15 @@ def procesar_df(df):
     # Normalizar nombres de columnas
     df.columns = [str(c).strip() for c in df.columns]
 
+    # Saltar fila 2 si es encabezado secundario (BARRIDO tiene fila 2 con nombres repetidos)
+    if len(df) > 0:
+        primera = df.iloc[0]
+        palabras = ["turno","vuelta","unidad","dominio","servicio","salida","llegada","km","chofer"]
+        matches = sum(1 for v in primera.astype(str).str.lower()
+                     if any(p in v for p in palabras))
+        if matches >= 3:
+            df = df.iloc[1:].reset_index(drop=True)
+
     # Renombrar
     col_rename = {}
     for c in df.columns:
@@ -196,14 +208,15 @@ def procesar_df(df):
     requeridas = ["SalidaPlan"]
     faltantes = [r for r in requeridas if r not in df.columns]
     if faltantes:
-        return None, f"No se encontraron columnas requeridas: {faltantes}. Verificá los encabezados."
+        return None, f"Columnas no encontradas: {faltantes}. Columnas disponibles: {list(df.columns)[:10]}"
 
     if len(df) == 0:
         return None, "La hoja no tiene datos aún."
 
     # ── Parseo de fechas/horas ────────────────────────────────────────────
     df["SalidaPlan_dt"] = parse_datetime_col(df["SalidaPlan"])
-    df["SalidaReal_dt"] = parse_datetime_col(df["SalidaReal"])
+    if "SalidaReal" in df.columns:
+        df["SalidaReal_dt"] = parse_datetime_col(df["SalidaReal"])
 
     if "LlegadaPlan" in df.columns:
         df["LlegadaPlan_dt"] = parse_datetime_col(df["LlegadaPlan"])
@@ -312,7 +325,7 @@ def procesar_df(df):
 # ─────────────────────────────────────────────
 # CARGA DESDE GOOGLE SHEETS
 # ─────────────────────────────────────────────
-GSHEETS_URL = "https://docs.google.com/spreadsheets/d/1MTV5NsRcoeIMNn_98ISz0VZWNx4vAN2LLOcw-i-gakM/export?format=csv&gid=1242609982"
+    GSHEETS_URL = "https://docs.google.com/spreadsheets/d/15edBYCaxYgIqPWTBfCiPxcZabRLIt9nai7fxbrhpAZM/export?format=csv"
 
 @st.cache_data(ttl=300, show_spinner="Actualizando desde Google Sheets…")
 def cargar_gsheets(url):
