@@ -325,7 +325,6 @@ def procesar_df(df):
 # ─────────────────────────────────────────────
 # CARGA DESDE GOOGLE SHEETS
 # ─────────────────────────────────────────────
-    GSHEETS_URL = "https://docs.google.com/spreadsheets/d/15edBYCaxYgIqPWTBfCiPxcZabRLIt9nai7fxbrhpAZM/export?format=csv"
 
 @st.cache_data(ttl=300, show_spinner="Actualizando desde Google Sheets…")
 def cargar_gsheets(url):
@@ -406,6 +405,9 @@ def datos_demo():
 # ─────────────────────────────────────────────
 # SIDEBAR
 # ─────────────────────────────────────────────
+
+GSHEETS_URL = "https://docs.google.com/spreadsheets/d/15edBYCaxYgIqPWTBfCiPxcZabRLIt9nai7fxbrhpAZM/export?format=csv"
+
 with st.sidebar:
     st.markdown("## 🚌 Panel de Control")
     st.markdown("---")
